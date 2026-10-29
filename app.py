@@ -3,6 +3,7 @@ import copy,csv,io,json,sqlite3,threading
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from agents import *
+import numpy as np
 
 DB=ROOT/'supplychain.db'
 LOCK=threading.RLock()
@@ -37,7 +38,10 @@ def cycle(multiplier=1.,delay=0):
         sales,_,products,vendors=load_inputs()
         # Future simulated days keep the last real history, with an explicit time shift.
         shift=(pd.Timestamp(s['date'])-sales.date.max()).days
-        sales=sales.copy(); sales['date']+=pd.Timedelta(days=shift)
+        sales = sales.copy()
+        sales['date'] = (
+            sales['date'].to_numpy(dtype='datetime64[ns]') + np.timedelta64(int(shift), 'D')
+        )
         c=Context(s['date'],copy.deepcopy(s['inventory']),sales,products,vendors,
                   copy.deepcopy(s['orders']),float(multiplier),int(delay))
         MasterOrchestrator().run(c)
