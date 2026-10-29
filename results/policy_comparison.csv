@@ -1,0 +1,3 @@
+policy,demand,served,lost_units,holding_inr,shortage_inr,procurement_inr,transfer_inr,order_count,fill_rate,operating_cost_inr,closing_on_hand,open_pipeline_units
+threshold30,20656,17552,3104,107499.0,340402.5,1899696.0499999996,0.0,55,0.8497288923315259,447901.5,5086,95
+agentic,20656,18254,2402,109531.5,282030.0,2323760.96,0.0,73,0.8837141750580945,391561.5,5759,335

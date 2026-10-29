@@ -1,0 +1,16 @@
+vendor_id,name,sku,unit_price_inr,lead_days,reliability,min_qty,lot_size,max_qty,shipping_inr,discount_threshold,discount_rate
+V1,Value Supplies,85123A,82.8,6,0.9,10,5,5000,100,500,0.03
+V2,Rapid Logistics,85123A,97.2,2,0.98,10,5,5000,100,500,0.03
+V3,Balanced Traders,85123A,90.0,4,0.96,10,5,5000,100,500,0.03
+V1,Value Supplies,85099B,59.8,6,0.9,10,5,5000,100,500,0.03
+V2,Rapid Logistics,85099B,70.2,2,0.98,10,5,5000,100,500,0.03
+V3,Balanced Traders,85099B,65.0,4,0.96,10,5,5000,100,500,0.03
+V1,Value Supplies,22423,312.8,6,0.9,10,5,5000,100,500,0.03
+V2,Rapid Logistics,22423,367.2,2,0.98,10,5,5000,100,500,0.03
+V3,Balanced Traders,22423,340.0,4,0.96,10,5,5000,100,500,0.03
+V1,Value Supplies,47566,165.6,6,0.9,10,5,5000,100,500,0.03
+V2,Rapid Logistics,47566,194.4,2,0.98,10,5,5000,100,500,0.03
+V3,Balanced Traders,47566,180.0,4,0.96,10,5,5000,100,500,0.03
+V1,Value Supplies,20725,69.0,6,0.9,10,5,5000,100,500,0.03
+V2,Rapid Logistics,20725,81.0,2,0.98,10,5,5000,100,500,0.03
+V3,Balanced Traders,20725,75.0,4,0.96,10,5,5000,100,500,0.03

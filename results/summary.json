@@ -1,0 +1,63 @@
+{
+  "forecast": [
+    {
+      "model": "mean28",
+      "wape": 0.7588769373598542,
+      "mae": 23.104189042905848
+    },
+    {
+      "model": "ridge",
+      "wape": 0.6722405812365407,
+      "mae": 20.466524553027725
+    },
+    {
+      "model": "seasonal7",
+      "wape": 0.7611636818643935,
+      "mae": 23.17380952380952
+    },
+    {
+      "model": "selected",
+      "wape": 0.6714243152695931,
+      "mae": 20.441673141314972
+    }
+  ],
+  "policy": [
+    {
+      "policy": "threshold30",
+      "demand": 20656,
+      "served": 17552,
+      "lost_units": 3104,
+      "holding_inr": 107499.0,
+      "shortage_inr": 340402.5,
+      "procurement_inr": 1899696.0499999996,
+      "transfer_inr": 0.0,
+      "order_count": 55,
+      "fill_rate": 0.8497288923315259,
+      "operating_cost_inr": 447901.5,
+      "closing_on_hand": 5086,
+      "open_pipeline_units": 95
+    },
+    {
+      "policy": "agentic",
+      "demand": 20656,
+      "served": 18254,
+      "lost_units": 2402,
+      "holding_inr": 109531.5,
+      "shortage_inr": 282030.0,
+      "procurement_inr": 2323760.96,
+      "transfer_inr": 0.0,
+      "order_count": 73,
+      "fill_rate": 0.8837141750580945,
+      "operating_cost_inr": 391561.5,
+      "closing_on_hand": 5759,
+      "open_pipeline_units": 335
+    }
+  ],
+  "forecast_test_start": "2011-11-03",
+  "forecast_test_end": "2011-11-30",
+  "validation_start": "2011-10-06",
+  "validation_end": "2011-11-02",
+  "replay_start": "2011-10-06",
+  "replay_end": "2011-11-30",
+  "caveat": "Replay uses historical observed sales as demand, simulated procurement assumptions and one 56-day window. Operating cost excludes purchase cost, reported separately. Policies end with different inventories; no net profit claim."
+}
