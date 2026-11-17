@@ -1,31 +1,343 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SupplyMind | Supply Chain Intelligence</title>
-<style>
-:root{--ink:#152b38;--muted:#647782;--line:#dde6e8;--teal:#087e83;--pale:#e8f7f5;--red:#b73545;--amber:#a96409}*{box-sizing:border-box}body{margin:0;background:#f4f7f8;color:var(--ink);font:14px/1.5 system-ui,Arial}button,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:white;border-radius:8px;padding:10px 15px;color:var(--ink)}button.primary{background:var(--teal);color:white;border:0}button:disabled{opacity:.5;cursor:wait}header{background:#fff;border-bottom:1px solid var(--line);padding:18px 32px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:23px;font-weight:800}.brand span{color:var(--teal)}.tag{font-size:11px;letter-spacing:1.4px;font-weight:700;color:var(--muted)}main{max-width:1460px;margin:auto;padding:26px 32px}.top{display:flex;justify-content:space-between;align-items:end;gap:20px}h1{font-size:29px;letter-spacing:-.7px;margin:0}h2{font-size:17px;margin:0 0 14px}p{margin:5px 0;color:var(--muted)}.controls{display:flex;gap:8px;flex-wrap:wrap}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0}.metric,.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px}.metric b{display:block;font-size:30px;line-height:1.3;margin-top:8px}.metric small{color:var(--muted)}.metric .accent{color:var(--teal)}.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:24px 0 18px}.tabs button{border:0;background:none;border-bottom:3px solid transparent;border-radius:0;padding:10px 20px}.tabs button.active{border-color:var(--teal);color:var(--teal);font-weight:700}table{border-collapse:collapse;width:100%;font-size:12px}th{text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;background:#f6f9fa}th,td{padding:11px 9px;border-bottom:1px solid #edf1f2}.badge{padding:3px 7px;border-radius:5px;font-size:10px;font-weight:800;background:#edf4f5;white-space:nowrap}.HIGH{color:var(--red);background:#fdecef}.MEDIUM{color:var(--amber);background:#fff4df}.LOW,.RECEIVED{color:#087668;background:#e7f7ee}.OVERSTOCK{color:#6552a1;background:#f0ecfc}.OPEN{color:#2869a5;background:#edf4fe}.notice{margin:18px 0 4px;padding:12px 16px;background:#e7f3f2;border-radius:8px;color:#25666a}.disclosure{font-size:11px;color:var(--muted);margin-top:20px}.chart{height:220px;width:100%}.legend{font-size:11px;color:var(--muted)}.trace{border-left:2px solid #bee1de;padding:0 0 18px 15px;margin-left:7px}.trace b{font-size:12px;color:var(--teal)}.trace p{font-size:12px;margin-top:4px}.section{display:none}.section.active{display:block}.wide{overflow:auto}.warehouse{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:14px 0}.bar{height:5px;background:#e7eff0;border-radius:5px;margin:8px 0}.bar i{height:5px;background:var(--teal);display:block;border-radius:5px}.foot{font-size:11px;color:var(--muted);padding:24px 0}select{border:1px solid var(--line);padding:8px;border-radius:6px;background:white}.subtle{font-size:12px}#error{color:var(--red)}.model{font-family:monospace}.bottom{margin-top:18px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}a{color:var(--teal)}@media(max-width:850px){main,header{padding:18px}.top{align-items:start;flex-direction:column}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.tabs{overflow:auto}.tag{display:none}}
-</style></head><body><header><div class="brand">Supply<span>Mind</span></div><div class="tag">PS-08 &nbsp; / &nbsp; AAI & EA MINI PROJECT &nbsp; / &nbsp; GCR7</div><div class="subtle">Purab Keshwani & team</div></header><main>
-<div class="top"><div><div class="tag">AUTONOMOUS OPERATIONS WORKSPACE</div><h1>Supply chain intelligence</h1><p>Forecast demand. Detect risk. Execute simulated procurement.</p></div><div class="controls"><button onclick="act('reset')">Reset demo</button><button onclick="act('advance')">Advance 1 day</button><button class="primary" onclick="act('cycle')">Run agent cycle</button></div></div>
-<div class="row bottom"><div class="controls"><label>Demand <select id="multiplier"><option value="1">Normal ×1.0</option><option value="1.6">Demand spike ×1.6</option><option value="2">Demand spike ×2.0</option></select></label><label>Vendor delay <select id="delay"><option value="0">No delay</option><option value="2">+2 days</option><option value="5">+5 days</option></select></label><button id="auto" onclick="toggleAuto()">Start auto loop</button></div><span id="date" class="subtle"></span></div>
-<div id="notice" class="notice">Loading inventory...</div><div id="error"></div><div id="metrics" class="metrics"></div>
-<nav class="tabs"><button class="active" onclick="tab('overview',this)">Overview</button><button onclick="tab('inventory',this)">Inventory & forecast</button><button onclick="tab('vendors',this)">Vendor decisions</button><button onclick="tab('orders',this)">Purchase orders</button><button onclick="tab('agents',this)">Agent trace</button><button onclick="tab('results',this)">Evaluation</button></nav>
-<section id="overview" class="section active"><div class="grid"><div class="panel"><h2>Observed sales and next 21 days</h2><svg id="chart" class="chart" viewBox="0 0 720 220"></svg><div class="legend">Solid: UCI observed sales &nbsp; / &nbsp; Dashed teal: forecast after the agent cycle</div></div><div class="panel"><h2>Warehouse balance</h2><div id="warehouses"></div></div></div><div class="panel bottom wide"><div class="row"><h2>Stockout and overstock watch</h2><span class="subtle">Risk before transfers and new procurement</span></div><div id="risks"></div></div></section>
-<section id="inventory" class="section"><div class="panel wide"><h2>Inventory and forecast by product location</h2><div id="inventoryTable"></div></div></section>
-<section id="vendors" class="section"><div class="panel wide"><h2>Supplier selection and estimated cost</h2><p>Feasible options obey minimum order, lot size, capacity and an INR 100,000 per-order limit.</p><div id="vendorTable"></div></div></section>
-<section id="orders" class="section"><div class="panel wide"><div class="row"><h2>Purchase and transfer orders</h2><a href="/api/orders.csv" download="purchase_orders.csv">Export CSV</a></div><p>Internal simulation ledger. Delivery receipts update on-hand stock when you advance the day.</p><div id="ordersTable"></div></div></section>
-<section id="agents" class="section"><div class="panel"><h2>11 cooperating agents</h2><p>Statistical learning and rule-based decision agents coordinate through a shared blackboard.</p><div id="trace" class="bottom"></div></div></section>
-<section id="results" class="section"><div class="grid"><div class="panel wide"><h2>Forecast backtest</h2><p>28-day holdout: 3–30 November 2011. Lower WAPE is better.</p><div id="forecastMetrics"></div></div><div class="panel wide"><h2>Inventory policy replay</h2><p>56 days, identical initial stock and historical observed sales.</p><div id="policyMetrics"></div></div></div><p class="bottom">Operating cost includes holding, shortage penalties and transfers. Procurement is reported separately. Closing inventory differs; this is a single scenario, not a profit or production benchmark.</p></section>
-<p class="disclosure">Data: UCI Online Retail by Daqing Chen, CC BY 4.0. Five selected products, January–November 2011. Warehouse allocation, stocks, vendors and INR costs are simulated. Future demo days use forecast-derived simulated demand. No live ERP, supplier messages, payments or real purchase orders.</p><div class="foot">Purab Keshwani (26) · Khushi Dayaramani (14) · Sahil Jethnani (21) &nbsp; / &nbsp; VESIT 2026–27</div>
-</main><script>
-let S, timer=null, autoStep=0;const $=id=>document.getElementById(id);const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const n=x=>Math.round(x||0).toLocaleString('en-IN');const money=x=>'₹'+n(x);const badge=x=>`<span class="badge ${esc(x)}">${esc(x)}</span>`;const table=(headers,rows)=>`<table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">Run the agent cycle to generate decisions.</td></tr>`}</tbody></table>`;
-function tab(id,b){document.querySelectorAll('.section,.tabs button').forEach(e=>e.classList.remove('active'));$(id).classList.add('active');b.classList.add('active')}
-function render(s){S=s;const name=sku=>esc(s.products.find(p=>p.sku===sku)?.name||sku);$('date').textContent='Simulation date: '+s.date;$('notice').textContent=s.last_action;let high=s.risks.filter(r=>r.level==='HIGH').length,po=s.orders.filter(o=>o.kind==='PURCHASE'&&o.status==='OPEN');$('metrics').innerHTML=[['Available stock',n(s.inventory.reduce((a,r)=>a+r.on_hand-r.reserved,0)),'15 product locations'],['High stockout risks',high,'Before corrective actions'],['Open purchase orders',po.length, money(po.reduce((a,r)=>a+r.total_inr,0))+' committed'],['Agents in workflow','11','10 specialists + orchestrator']].map(([l,v,t])=>`<div class="metric">${l}<b class="accent">${v}</b><small>${t}</small></div>`).join('');
-$('warehouses').innerHTML=['WH-1','WH-2','WH-3'].map(w=>{let rs=s.inventory.filter(r=>r.warehouse===w),q=rs.reduce((a,r)=>a+r.on_hand,0),cap=rs.reduce((a,r)=>a+r.capacity,0);return `<div class="warehouse"><div style="width:100%"><div class="row"><strong>${w}</strong><span>${n(q)} units</span></div><div class="bar"><i style="width:${Math.min(100,q/cap*100)}%"></i></div><small>${(q/cap*100).toFixed(1)}% of configured capacity</small></div></div>`}).join('');
-$('risks').innerHTML=table(['Product','Warehouse','Risk','Days cover','Safety stock','Expected shortage'],s.risks.filter(r=>r.level!=='LOW').map(r=>[name(r.sku),esc(r.warehouse),badge(r.level),r.days_cover,n(r.safety_stock),n(r.expected_shortage)]));
-$('inventoryTable').innerHTML=table(['Product / SKU','Warehouse','On hand','On order','Capacity','Forecast / day','Model'],s.inventory.map(r=>{let f=s.forecasts.find(f=>f.sku===r.sku&&f.warehouse===r.warehouse);let onorder=s.orders.filter(o=>o.status==='OPEN'&&o.sku===r.sku&&o.warehouse===r.warehouse).reduce((a,o)=>a+o.quantity,0);return [name(r.sku)+`<br><small>${esc(r.sku)}</small>`,esc(r.warehouse),n(r.on_hand),n(onorder),n(r.capacity),f?f.mean.toFixed(1):'Pending',f?esc(f.model):'Pending']}));
-$('vendorTable').innerHTML=s.proposals.map(p=>`<h3>${name(p.sku)} · ${esc(p.warehouse)}</h3>`+table(['Supplier','Lead','Quantity','Landed cost','Risk cost','Total score','Decision'],p.candidates.map(v=>[esc(v.name),v.effective_lead+' d',n(v.quantity),money(v.landed),money(v.shortage_cost),money(v.score),v.vendor_id===p.selected?.vendor_id?badge('SELECTED'):v.feasible?'Alternative':badge('INFEASIBLE')]))).join('')||'<p>No supplier decisions yet.</p>';
-$('ordersTable').innerHTML=table(['ID','Type','Product','Warehouse','Supplier / source','Qty','Total','ETA','Status'],s.orders.map(o=>[esc(o.id),esc(o.kind),esc(o.sku),esc(o.warehouse),esc(o.vendor||o.source),n(o.quantity),o.total_inr?money(o.total_inr):'Transfer',esc(o.eta),badge(o.status)]));
-$('trace').innerHTML=s.log.map(l=>`<div class="trace"><b>${esc(l.agent)}</b><p>${esc(l.message)}</p></div>`).join('')||'<p>Run the cycle to inspect all agent messages.</p>';
-$('forecastMetrics').innerHTML=table(['Model','WAPE','MAE'],(s.evaluation.forecast||[]).map(r=>[esc(r.model),(r.wape*100).toFixed(1)+'%',r.mae.toFixed(2)]));$('policyMetrics').innerHTML=table(['Policy','Fill rate','Lost units','Operating cost'],(s.evaluation.policy||[]).map(r=>[esc(r.policy),(r.fill_rate*100).toFixed(1)+'%',n(r.lost_units),money(r.operating_cost_inr)]));drawChart(s)}
-function drawChart(s){let a=s.history.map(r=>r.units),f=s.forecasts.length?Array.from({length:21},(_,i)=>s.forecasts.reduce((a,r)=>a+r.values[i],0)):[];let all=[...a,...f],max=Math.max(1,...all),W=690,H=170,x=i=>20+i*W/Math.max(1,all.length-1),y=v=>185-v/max*H;let svg=[0,.5,1].map(t=>`<line x1="20" y1="${y(max*t)}" x2="710" y2="${y(max*t)}" stroke="#e6ecee"/><text x="20" y="${y(max*t)-4}" font-size="10" fill="#7c8d96">${n(max*t)}</text>`).join('');const path=(v,offset)=>v.map((p,i)=>(i?'L':'M')+x(i+offset).toFixed(1)+','+y(p).toFixed(1)).join(' ');svg+=`<path d="${path(a,0)}" fill="none" stroke="#526875" stroke-width="2"/>`;if(f.length)svg+=`<path d="${path([a.at(-1),...f],a.length-1)}" fill="none" stroke="#087e83" stroke-width="2.5" stroke-dasharray="6 4"/>`;$('chart').innerHTML=svg}
-async function act(path){document.querySelectorAll('button').forEach(b=>b.disabled=true);$('error').textContent='';try{let r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({multiplier:+$('multiplier').value,delay:+$('delay').value})});let s=await r.json();if(!r.ok)throw Error(s.error);render(s)}catch(e){$('error').textContent=e.message}finally{document.querySelectorAll('button').forEach(b=>b.disabled=false)}}
-function toggleAuto(){if(timer){clearInterval(timer);timer=null;$('auto').textContent='Start auto loop'}else{autoStep=0;timer=setInterval(async()=>{await act(autoStep++%2?'advance':'cycle')},6000);$('auto').textContent='Stop auto loop'}}
-fetch('/api/state').then(r=>r.json()).then(render).catch(()=>{$('notice').textContent='Start python app.py, then open http://127.0.0.1:8000';if(window.SNAPSHOT)render(window.SNAPSHOT)});
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SupplyMind turns warehouse inventory, sales and supplier terms into replenishment plans and order records.">
+  <title>SupplyMind | Inventory operations</title>
+  <link rel="stylesheet" href="workspace.css">
+  <script src="workspace.js" defer></script>
+  <script src="operations-ui.js" defer></script>
+</head>
+<body data-mode="operations">
+  <a class="skip" href="#main">Skip to workspace</a>
+  <header class="app-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#overview" aria-label="SupplyMind overview">
+        <svg class="brand-mark" width="31" height="31" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 3 28 10v12l-12 7-12-7V10z M4 10l12 7 12-7 M16 17v12 M10 6.5l12 7v6" />
+        </svg>
+        <span>SupplyMind</span>
+      </a>
+      <nav class="tabs" aria-label="Workspace">
+        <button class="active" aria-current="page" onclick="tab('overview',this)">Overview</button>
+        <button onclick="tab('inventory',this)">Inventory</button>
+        <button onclick="tab('vendors',this)">Suppliers</button>
+        <button onclick="tab('orders',this)">Orders</button>
+        <button onclick="tab('agents',this)">Agent trace</button>
+        <button data-sample onclick="tab('results',this)">Evaluation</button>
+        <button data-operations onclick="tab('data',this)">Data</button>
+      </nav>
+      <span class="mode" id="workspaceName" data-operations>Operations workspace</span>
+      <a class="mode mode-link" data-sample href="/">Back to operations</a>
+    </div>
+  </header>
+
+  <main id="main" class="shell workspace">
+    <div class="page-head">
+      <div>
+        <h1 id="pageTitle">Inventory operations</h1>
+        <p id="pageDescription">Monitor stock, plan replenishment and track warehouse deliveries.</p>
+      </div>
+      <div class="controls">
+        <button class="button" data-sample data-mutation onclick="act('advance')" disabled>Advance 1 day</button>
+        <button class="button" data-operations data-mutation id="recordStock" disabled>Record stock</button>
+        <a class="button primary" id="setupWorkspace" data-operations href="#data" hidden>Set up workspace</a>
+        <button class="button primary" id="runCycle" data-mutation onclick="act('cycle')" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"/></svg>
+          <span id="cycleLabel">Run agent cycle</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="error" class="request-error" role="alert" hidden>
+      <span id="errorMessage"></span>
+      <button class="text-button" id="retry" type="button" hidden>Retry</button>
+    </div>
+    <p id="actionUpdate" class="action-update" role="status" hidden></p>
+    <noscript><p class="empty">Enable JavaScript to use the workspace.</p></noscript>
+
+    <section id="overview" class="section active" aria-label="Operations overview">
+      <section class="workflow panel" aria-labelledby="workflowTitle">
+        <div class="panel-head workflow-head">
+          <div>
+            <h2 id="workflowTitle">Agent workflow</h2>
+            <p id="workflowCaption">The orchestrator hands shared state from stock checks to order execution.</p>
+          </div>
+          <span id="runStatus" class="chip neutral">Loading</span>
+        </div>
+        <ol class="stages" id="stages">
+          <li><span>Observe</span><strong>Stock checks</strong><small>Inventory tracking</small></li>
+          <li><span>Forecast</span><strong>Demand models</strong><small>21-day forecast</small></li>
+          <li><span>Decide</span><strong>Replenishment</strong><small>Risk, transfers and vendor scoring</small></li>
+          <li><span>Review</span><strong>Order drafts</strong><small>Review purchases and transfer recommendations</small></li>
+        </ol>
+        <div class="workflow-foot">
+          <span id="notice" role="status" aria-live="polite">Loading inventory…</span>
+          <a class="text-link" href="#agents">Inspect agent trace <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+        </div>
+      </section>
+
+      <div class="metrics panel" id="metrics" aria-label="Inventory summary" aria-busy="true">
+        <div><span>Available stock</span><strong class="skeleton"></strong><small>Across all warehouses</small></div>
+        <div><span>High stockout risks</span><strong class="skeleton"></strong><small>Before corrective actions</small></div>
+        <div><span>Open purchase orders</span><strong class="skeleton"></strong><small>Awaiting receipt</small></div>
+        <div><span>Agents in workflow</span><strong class="skeleton"></strong><small>10 specialists and an orchestrator</small></div>
+      </div>
+
+      <div class="overview-grid">
+        <section class="panel demand-panel" aria-labelledby="demandTitle">
+          <div class="panel-head">
+            <div><h2 id="demandTitle">Demand outlook</h2><p>Daily units across all warehouses</p></div>
+            <div class="chart-legend"><span>Observed</span><span>Forecast</span></div>
+          </div>
+          <svg id="chart" class="chart" role="img" aria-label="Daily observed sales and 21-day forecast" viewBox="0 0 680 246"></svg>
+          <p id="chartNote" class="panel-note">Loading sales history…</p>
+        </section>
+
+        <section class="panel scenario-panel" data-sample aria-labelledby="scenarioTitle">
+          <div class="panel-head">
+            <div><h2 id="scenarioTitle">Simulation controls</h2><p id="date">Loading simulation date…</p></div>
+            <svg class="section-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></svg>
+          </div>
+          <div class="scenario-body">
+            <div class="preset-row" aria-label="Scenario presets">
+              <button class="preset" type="button" id="baseline" data-preset="baseline" aria-pressed="true" disabled>Baseline</button>
+              <button class="preset" type="button" id="disruption" data-preset="disruption" aria-pressed="false" disabled>Supply disruption</button>
+            </div>
+            <div class="scenario-fields">
+              <label>Demand factor
+                <select id="multiplier" disabled>
+                  <option value="1">1.0×</option><option value="1.6">1.6×</option><option value="2">2.0×</option>
+                </select>
+              </label>
+              <label>Supplier delay
+                <select id="delay" disabled>
+                  <option value="0">No delay</option><option value="2">+2 days</option><option value="5">+5 days</option>
+                </select>
+              </label>
+            </div>
+            <p id="scenarioHint">Choose inputs before running the cycle.</p>
+          </div>
+          <div class="scenario-foot">
+            <button id="auto" class="text-button" onclick="toggleAuto()" disabled>Start auto loop</button>
+            <button id="reset" class="text-button" data-mutation onclick="act('reset')" disabled>Reset simulation</button>
+          </div>
+        </section>
+
+        <section class="panel scenario-panel" data-operations aria-labelledby="readinessTitle">
+          <div class="panel-head">
+            <div><h2 id="readinessTitle">Planning readiness</h2><p id="workingDate">Checking workspace data…</p></div>
+          </div>
+          <dl class="readiness-list" id="readinessCounts"></dl>
+          <div class="scenario-foot">
+            <a class="text-link" id="manageDataLink" href="#data">Set up workspace</a>
+            <a class="text-link" id="reviewDraftLink" href="#orders" hidden>Review draft orders</a>
+          </div>
+        </section>
+
+        <section class="panel risk-panel" aria-labelledby="riskTitle">
+          <div class="panel-head">
+            <div><h2 id="riskTitle">Stockout and overstock watch</h2><p>Risk assessed before transfers and purchasing</p></div>
+            <span id="riskTotal" class="muted"></span>
+          </div>
+          <div id="risks"><p class="empty">Loading stock positions…</p></div>
+        </section>
+        <section class="panel warehouses-panel" aria-labelledby="warehouseTitle">
+          <div class="panel-head"><div><h2 id="warehouseTitle">Warehouse balance</h2><p>On-hand stock and configured capacity</p></div></div>
+          <div id="warehouses"><p class="empty">Loading warehouses…</p></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="inventory" class="section" aria-label="Inventory and forecasts">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Product locations</h2><p id="inventoryCaption">Choose a product to examine its forecast and decisions.</p></div>
+          <label class="filter">Warehouse <select id="warehouseFilter"><option value="">All warehouses</option></select></label>
+        </div>
+        <div id="inventoryTable"><p class="empty">Loading inventory…</p></div>
+      </section>
+      <section class="panel spaced-panel" data-operations>
+        <div class="panel-head"><div><h2>Stock activity</h2><p>Latest sales, adjustments, dispatches and receipts.</p></div></div>
+        <div id="stockActivity"><p class="empty">Loading activity…</p></div>
+      </section>
+    </section>
+
+    <section id="vendors" class="section" aria-label="Vendor decisions">
+      <section class="panel">
+        <div class="panel-head"><div><h2>Supplier decisions</h2><p id="supplierCaption">Compare landed, holding and shortage costs for eligible suppliers.</p></div></div>
+        <div id="vendorTable"><p class="empty">Loading supplier decisions…</p></div>
+      </section>
+      <section class="panel spaced-panel" data-operations>
+        <div class="panel-head"><div><h2>Supplier directory</h2><p>Terms used by the planning agents.</p></div><a class="text-link" href="#data">Import terms</a></div>
+        <div id="supplierDirectory"><p class="empty">Loading suppliers…</p></div>
+      </section>
+    </section>
+
+    <section id="orders" class="section" aria-label="Purchase and transfer orders">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Order ledger</h2><p data-operations>Release drafts, export purchase orders and record deliveries as stock arrives.</p><p data-sample>Advance the scenario date to receive orders due on their ETA.</p></div>
+          <a class="button" id="exportOrders" href="/api/operations/orders.csv" download="orders.csv">Export CSV</a>
+        </div>
+        <div class="release-bar" id="releaseBar" data-operations hidden>
+          <div><strong id="releaseTitle"></strong><p id="releaseDescription"></p></div>
+          <button class="button primary" type="button" id="reviewRelease" data-mutation>Release order plan</button>
+        </div>
+        <div class="ledger-toolbar">
+          <label class="filter">Status <select id="orderFilter"><option value="">All orders</option><option value="OPEN">Open</option><option value="RECEIVED">Received</option><option value="DRAFT" data-operations>Draft</option><option value="CANCELLED" data-operations>Cancelled</option><option value="SUPERSEDED" data-operations>Superseded</option></select></label>
+          <span id="orderCount" class="muted"></span>
+        </div>
+        <div id="ordersTable"><p class="empty">Loading orders…</p></div>
+      </section>
+    </section>
+
+    <section id="agents" class="section" aria-label="Agent trace">
+      <div class="trace-grid">
+        <section class="panel">
+          <div class="panel-head"><div><h2>Execution trace</h2><p id="traceCaption">Ordered messages from the most recent agent cycle.</p></div><span id="agentCount" class="chip neutral"></span></div>
+          <div id="trace"><p class="empty">Loading agent trace…</p></div>
+        </section>
+        <div class="trace-side">
+          <section class="panel">
+            <div class="panel-head"><h2>How agents coordinate</h2></div>
+            <dl class="coordination">
+              <div><dt>Shared state</dt><dd>The orchestrator passes the same inventory, forecasts and orders through ten specialists in sequence.</dd></div>
+              <div><dt>Learning and policy</dt><dd>Ridge regression competes with two baselines. Later agents use the selected forecast with inventory rules and cost scoring.</dd></div>
+              <div data-operations><dt>Planning and release</dt><dd>Agents draft feasible purchase and transfer orders. The operator releases the plan and records stock received.</dd></div>
+              <div data-sample><dt>Autonomous execution</dt><dd>Transfers and feasible purchase orders are committed to SQLite once per simulated day.</dd></div>
+            </dl>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Anomaly signals</h2></div>
+            <div id="anomalies"><p class="empty">Loading anomaly signals…</p></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="section" data-sample aria-label="Evaluation">
+      <div class="evaluation-grid">
+        <section class="panel">
+          <div class="panel-head"><div><h2>Forecast backtest</h2><p>28-day holdout, 3 to 30 November 2011. Lower WAPE is better.</p></div></div>
+          <div id="forecastMetrics"><p class="empty">Loading backtest results…</p></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Inventory policy replay</h2><p>56 days with identical initial stock and observed sales.</p></div></div>
+          <div id="policyMetrics"><p class="empty">Loading replay results…</p></div>
+        </section>
+      </div>
+      <p class="evaluation-note">Operating cost includes holding, shortage penalties and transfers. Procurement spending and closing stock are reported separately. Results describe one historical replay.</p>
+    </section>
+
+    <section id="data" class="section" data-operations aria-label="Workspace data">
+      <div class="operations-grid">
+        <section class="panel">
+          <div class="panel-head"><div><h2>Import workspace records</h2><p>Select one or more CSV files. Start with the catalog and stock locations.</p></div></div>
+          <form class="operations-form" id="importForm">
+            <div class="import-rows">
+              <div class="import-row"><label for="productsFile">Products <small>SKU, name and planning costs</small></label><input id="productsFile" name="products" type="file" accept=".csv,text/csv"><a class="text-link" href="/api/operations/template.csv?type=products" aria-label="Download products CSV template">Template</a></div>
+              <div class="import-row"><label for="inventoryFile">Inventory <small>Stock locations, opening units and capacity</small></label><input id="inventoryFile" name="inventory" type="file" accept=".csv,text/csv"><a class="text-link" href="/api/operations/template.csv?type=inventory" aria-label="Download inventory CSV template">Template</a></div>
+              <div class="import-row"><label for="vendorsFile">Suppliers <small>Quotes, lead times and order limits</small></label><input id="vendorsFile" name="vendors" type="file" accept=".csv,text/csv"><a class="text-link" href="/api/operations/template.csv?type=vendors" aria-label="Download suppliers CSV template">Template</a></div>
+              <div class="import-row"><label for="salesFile">Sales history <small>Daily units sold by product and warehouse</small></label><input id="salesFile" name="sales" type="file" accept=".csv,text/csv"><a class="text-link" href="/api/operations/template.csv?type=sales" aria-label="Download sales CSV template">Template</a></div>
+            </div>
+            <p class="muted">Existing on-hand balances are preserved. Imported sales provide forecast history. Record current stock changes in Inventory.</p>
+            <button class="button primary" type="submit" data-mutation>Import selected files</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Workspace settings</h2><p>Set the label and budget used for procurement.</p></div></div>
+          <form class="operations-form" id="settingsForm">
+            <label>Workspace name <input id="settingsName" name="name" required maxlength="64"></label>
+            <label>Per-order budget in INR <input id="settingsBudget" name="budget" type="number" required min="0.01" max="1000000000" step="0.01"></label>
+            <button class="button" type="submit" data-mutation>Save settings</button>
+          </form>
+        </section>
+      </div>
+      <section class="panel spaced-panel">
+        <div class="panel-head"><div><h2>Planning coverage</h2><p>Each location needs supplier terms and at least 28 days of sales history. The most recent completed sales day must be within seven days.</p></div></div>
+        <div id="planningCoverage"><p class="empty">Loading planning coverage…</p></div>
+      </section>
+    </section>
+
+    <footer class="workspace-foot">
+      <div class="workspace-links" data-live><a class="text-link" href="/practice">Open practice workspace</a><a class="text-link" href="/sample">Open scenario lab</a></div>
+      <div class="workspace-links" data-practice><a class="text-link" href="/">Back to operations</a><button id="restorePractice" class="text-button" type="button" data-mutation>Restore practice data</button></div>
+      <p data-practice>Practice uses historical sample records, separate from operations. Sales source <a href="https://doi.org/10.24432/C5BW33">UCI Online Retail</a> (CC BY 4.0).</p>
+      <details data-sample>
+        <summary>Data &amp; project credits</summary>
+        <p>Observed demand uses five products from <a href="https://doi.org/10.24432/C5BW33">UCI Online Retail</a> by Daqing Chen (CC BY 4.0), January to November 2011. Warehouse allocation, inventory, suppliers and INR costs are simulated. Later simulation days consume forecast-derived demand.</p>
+        <p>PS-08 / AAI &amp; EA / GCR7 / VESIT 2026 to 2027. Purab Keshwani (26), Khushi Dayaramani (14), Sahil Jethnani (21).</p>
+      </details>
+    </footer>
+  </main>
+
+  <dialog id="decisionDialog" aria-labelledby="decisionTitle">
+    <div class="dialog-head"><div><h2 id="decisionTitle">Decision details</h2><p id="decisionLocation"></p></div>
+      <form method="dialog"><button class="button" autofocus>Close</button></form>
+    </div>
+    <div id="decisionBody" class="dialog-body"></div>
+  </dialog>
+
+  <dialog id="resetDialog" data-sample aria-labelledby="resetTitle">
+    <div class="dialog-head"><h2 id="resetTitle">Reset the simulation?</h2></div>
+    <div class="dialog-body">
+      <p>This clears the local order ledger and returns inventory to 30 November 2011. The selected scenario will stay set.</p>
+      <form method="dialog" class="dialog-actions">
+        <button class="button" value="cancel" autofocus>Cancel</button>
+        <button class="button danger" value="reset">Reset simulation</button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="operation-dialog" id="stockDialog" data-operations aria-labelledby="stockTitle">
+    <div class="dialog-head"><h2 id="stockTitle">Record stock activity</h2></div>
+    <form id="stockForm" class="dialog-body operations-form">
+      <label>Product and warehouse <select id="stockPosition" name="position" required></select></label>
+      <label>Activity <select name="kind"><option value="SALE">Sale</option><option value="STOCK_IN">Add stock</option><option value="STOCK_OUT">Remove stock</option></select></label>
+      <label>Quantity <input name="quantity" type="number" min="1" max="2147483647" step="1" required></label>
+      <label>Reference <input name="reference" maxlength="120" placeholder="Invoice or count reference" required></label>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close-operation>Close</button><button class="button primary" type="submit" data-mutation>Record activity</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="operation-dialog" id="releaseDialog" data-operations aria-labelledby="releaseDialogTitle">
+    <div class="dialog-head"><h2 id="releaseDialogTitle">Release order plan</h2></div>
+    <form id="releaseForm" class="dialog-body operations-form">
+      <p id="releaseSummary"></p>
+      <p>Confirm internal dispatch before releasing transfers. The source stock is reduced immediately. Destination stock updates when a receipt is recorded.</p>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close-operation>Back</button><button class="button primary" type="submit" data-mutation>Release orders</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="operation-dialog" id="receiptDialog" data-operations aria-labelledby="receiptDialogTitle">
+    <div class="dialog-head"><div><h2 id="receiptDialogTitle">Record receipt</h2><p id="receiptOrder"></p></div></div>
+    <form id="receiptForm" class="dialog-body operations-form">
+      <label>Units received <input name="quantity" type="number" min="1" step="1" required></label>
+      <label>Receipt reference <input name="reference" maxlength="120" placeholder="Delivery note or receipt number" required></label>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close-operation>Close</button><button class="button primary" type="submit" data-mutation>Record receipt</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="operation-dialog" id="cancelDialog" data-operations aria-labelledby="cancelDialogTitle">
+    <div class="dialog-head"><h2 id="cancelDialogTitle">Cancel remaining purchase?</h2></div>
+    <form id="cancelForm" class="dialog-body operations-form">
+      <p id="cancelSummary"></p>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close-operation>Back</button><button class="button danger" type="submit" data-mutation>Cancel remaining units</button></div>
+    </form>
+  </dialog>
+  <dialog class="operation-dialog" id="restoreDialog" data-practice aria-labelledby="restoreDialogTitle">
+    <div class="dialog-head"><h2 id="restoreDialogTitle">Restore practice data?</h2></div>
+    <form id="restoreForm" class="dialog-body operations-form">
+      <p>Replace the practice workspace with its starting inventory, supplier terms and historical sales.</p>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close-operation>Back</button><button class="button danger" type="submit" data-mutation>Restore practice data</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

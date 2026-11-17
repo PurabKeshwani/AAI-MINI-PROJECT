@@ -8,9 +8,10 @@ AAI & EA mini project, VESIT, 2026-27. Group GCR7, D17 B, Batch A.
 - Khushi Dayaramani, roll 14
 - Sahil Jethnani, roll 21
 
-SupplyMind is an executable local prototype with eleven cooperating decision
-agents, demand forecasting, stockout alerts, warehouse transfers, constrained
-vendor selection, SQLite purchase orders and a browser dashboard.
+SupplyMind is a local inventory and procurement workspace. Eleven cooperating
+agents forecast demand, assess stockout risk, plan internal transfers and draft
+orders against supplier terms. Operators release plans, record stock movements
+and receive deliveries in SQLite.
 
 ## Run on Windows
 
@@ -23,24 +24,77 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-Open http://127.0.0.1:8000 in Chrome or Edge. Prepared CSV files are included,
-so no download, API key, paid service or retraining is required for the demo.
+Open http://127.0.0.1:8000 in Chrome or Edge. The operations workspace starts
+empty on first use. It uses the host's calendar and stores data in
+`operations.db`. Stop the server before copying this file for backup.
 On macOS/Linux use `python3 -m venv .venv` and `source .venv/bin/activate`.
 
-## Five minute demo
+## Work with your inventory
 
-1. Click **Reset demo**, then **Run agent cycle**.
-2. Inspect the risk watch, warehouses and forecast chart.
-3. Open **Vendor decisions** and explain price versus shortage-cost exposure.
-4. Open **Purchase orders**, export CSV, then run the same cycle again.
-   The application blocks duplicate execution for the same simulation date.
-5. Click **Advance 1 day** and run again. Incoming transfers and POs arrive on
-   their ETA and increase on-hand stock. Demand on future demo days is simulated
-   from the displayed forecast, not newly collected real sales.
-6. Reset. Set demand to 1.6 and vendor delay to 2 days, then run again.
-7. Inspect **Agent trace** and **Evaluation**.
-8. **Start auto loop** alternates a cycle and one simulated day every six seconds.
-   Keep this browser tab open. Stop the loop before changing scenarios or resetting.
+1. Open **Data** and download the CSV templates. Import products,
+   product locations, supplier terms and sales history. You can upload all four
+   together or add them as they become available.
+2. Review **Planning coverage** and set your INR per-order budget. Each ready
+   location needs a supplier for its SKU and 28 calendar days of completed sales
+   history, with the latest reported day within seven days. Missing dates inside
+   the supplied interval are treated as zero sales. Record zero-unit days to mark
+   the end of a reporting period when there were no sales.
+3. Click **Plan replenishment**. Agents produce the forecast, risk evidence,
+   supplier comparison and draft purchase or transfer orders. The plan uses the
+   latest completed sales dates and current stock. Stock and open inbound units
+   change after release or a recorded movement.
+4. In **Orders**, review and release the plan. Confirm dispatch for any listed
+   transfers, then export released purchase orders for your supplier workflow.
+   Use **Receive** for partial or full deliveries and record the delivery reference.
+   Confirm changes with the supplier before cancelling an open purchase balance.
+5. Use **Record stock activity** to enter a sale or stock adjustment. A sale
+   reduces available stock and contributes to demand history after that date
+   closes. The activity ledger retains your reference and unit change.
+
+Existing opening balances are preserved on reimport. Inventory CSV updates can
+change reserved units and capacity. Sales CSVs extend completed daily history
+without changing stock. Correct a physical balance through stock activity. Use
+ISO dates (`YYYY-MM-DD`), decimal INR amounts and whole units. Supplier lead
+times are 1 to 14 days, reliability and discount are fractions from 0 to 1, and
+minimum quantity is a multiple of lot size. See [dataset fields](data/DATASET_README.md)
+for the shared column definitions.
+
+Imported terms, stock changes and receipts can supersede an unreleased draft.
+Run planning again to incorporate the updated records. Transfer and purchase
+drafts release together because vendor quantities depend on planned transfers.
+
+## Five minute viva
+
+Open http://127.0.0.1:8000/practice to use the same workflow with preloaded
+historical records in a separate `practice.db`. The practice date is 1 December
+2011. Use **Restore practice data** to return to starting balances.
+
+1. Run a replenishment plan and open a flagged location. Walk through the
+   forecast, projected shortage, supplier scores and draft quantities.
+2. Open **Agent trace** to show the specialists handing evidence to the
+   orchestrator. The trace records the agents that actually ran.
+3. Release the plan, export a purchase order and receive part of an order.
+   Open **Inventory** to verify the stock change and receipt reference.
+
+The [scenario lab](http://127.0.0.1:8000/sample) is the separate PS-08 experiment
+with demand and delay controls, simulated days and the historical evaluation.
+
+1. In **Overview**, choose **Baseline**, confirm **Reset simulation** and click
+   **Run agent cycle**. The workflow shows forecasts, replenishment proposals
+   and committed orders from the run.
+2. Open a product in the risk watch. Follow its forecast validation, stockout
+   assessment, supplier costs and ledger orders in the decision details.
+3. In **Agent trace**, expand the specialists to see how each decision was made.
+   In **Orders**, export the ledger as CSV. Run the cycle a second time to show
+   duplicate protection for the simulation date.
+4. Click **Advance 1 day** and check **Orders → Received**. Incoming stock arrives
+   on its ETA. Later days consume demand derived from the most recent forecast.
+5. Return to **Overview**, reset the simulation, choose **Supply disruption**
+   (1.6× demand and a two-day supplier delay) and run the cycle again. Compare the
+   risk watch and supplier decisions with the baseline. Open **Evaluation** for
+   the separate historical backtest and policy replay.
+6. **Start auto loop** alternates planning and advancing one day, with a six-second
+   pause between actions. Keep the tab open and stop the loop before editing inputs.
 
 Set scenario controls before the day's first cycle. A second cycle on that day
 is blocked even if scenario inputs change. Reset or advance to replan.
@@ -64,15 +118,25 @@ CSVs contain no customer identifiers, invoice identifiers or personal records.
 ## Files
 
 - `agents.py`: forecast functions, Context blackboard, ten specialist agents and orchestrator
-- `app.py`: local HTTP API, SQLite adapter, day advancement and idempotency
-- `static/index.html`: responsive browser dashboard
+- `operations.py`: operational SQLite data import, planning, release and stock activity
+- `app.py`: local HTTP API, workspace routing and scenario adapter
+- `static/`: responsive dashboard, decision details, agent trace and offline fonts
 - `data/`: attributed sales data and explicitly simulated operational tables
 - `evaluate.py`: chronological holdout and historical inventory replay
 - `results/`: reproducible CSV/JSON evaluation outputs
-- `tests/test_system.py`: eight meaningful functional checks
+- `tests/`: agent checks and operational transaction regressions
 - `DEMO_PREVIEW.html`: offline read-only dashboard snapshot, if included
 
-## API
+## Operational API
+
+Use `/api/operations/` for workspace data and `/api/practice/` for the isolated
+practice records. `GET state`, `GET template.csv?type=products` and
+`GET orders.csv` return the workspace, CSV templates and released orders.
+`POST import`, `settings`, `activity`, `plan`, `release`, `receipt` and `cancel`
+accept JSON. Activity and receipt submissions take a UUID request token so a
+retry applies once. The API binds to localhost for single-machine use.
+
+## Scenario API
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -92,8 +156,8 @@ Actual demand proxy: positive, non-cancelled UK sales for five fixed UCI Online
 Retail SKUs, 1 January to 30 November 2011. Exact duplicate transaction rows
 are removed. Sales aggregate by day and SKU; zero-activity dates are filled
 with zero. The 50/30/20 warehouse split conserves each source daily total.
-**Warehouse assignments, inventory, capacity, suppliers, reliability, lead times,
-INR quotes, shipping, penalties and holding costs are simulated assumptions.**
+**The bundled practice and scenario records assume warehouse assignments,
+inventory, capacity, suppliers, lead times, INR quotes and costs.**
 The original prices are sterling. Demo INR quotes are invented scenarios, not
 a currency conversion. No promotion, weather, theft or real stockout labels
 exist in this data. A statistical anomaly cannot establish theft or its cause.
@@ -103,8 +167,10 @@ Repository. https://doi.org/10.24432/C5BW33. CC BY 4.0.
 
 ## What autonomy means here
 
-The agents autonomously update a **local simulation ledger**. They do not send
-emails, contact suppliers, create real financial obligations or make payments.
+In operations, agents autonomously produce draft orders. Operators control
+release, physical stock movements and delivery receipts. Suppliers receive
+orders through whatever external process the operator uses after exporting a PO.
+The scenario lab autonomously updates its separate simulation ledger.
 No LLM or reinforcement learning is implemented. Ridge regression learns from
 data; the remaining decision agents apply inspectable statistical and rule
 policies. The architecture coordinates agents centrally through shared state,

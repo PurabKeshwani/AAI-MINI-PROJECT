@@ -4,6 +4,7 @@ Agents use statistical learning and inspectable inventory policies. They do not
 use an LLM or claim to implement the MARL papers reviewed in the report.
 """
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from pathlib import Path
 import math
 import numpy as np
@@ -23,7 +24,8 @@ def features(values, date):
             a[-1],a[-7],a[-14],a[-7:].mean(),a[-28:].mean()]
 
 def predict(history, horizon=14, model='mean28'):
-    vals=history.astype(float).tolist(); dates=pd.date_range(history.index[-1]+pd.Timedelta(days=1),periods=horizon)
+    vals=history.astype(float).tolist()
+    dates=pd.date_range(history.index[-1],periods=horizon+1)[1:]
     fitted=None
     if model=='ridge' and len(vals)>=60:
         X=[features(vals[:i],history.index[i]) for i in range(28,len(vals))]
@@ -65,8 +67,12 @@ class Context:
     purchases: list=field(default_factory=list)
     anomalies: list=field(default_factory=list)
     log: list=field(default_factory=list)
+    operational: bool=False
 
     def emit(self,agent,message): self.log.append(dict(agent=agent,message=message))
+
+    def date_after(self, days):
+        return (date.fromisoformat(self.date) + timedelta(days=int(days))).isoformat()
 
 class InventoryTrackingAgent:
     def run(self,c):
@@ -83,13 +89,17 @@ class DemandForecastingAgent:
         for (sku,wh),g in c.history.groupby(['sku','warehouse']):
             h=g.set_index('date').units.sort_index()
             model, scores=choose_model(h)
-            f=predict(h,21,model)*c.demand_multiplier
+            gap=(date.fromisoformat(c.date)-h.index[-1].date()).days if c.operational else 0
+            f=predict(h,21+gap,model)[gap:]*c.demand_multiplier
             # Seasonal-naive residuals are an inexpensive uncertainty proxy.
             residual=(h-h.shift(7)).dropna().tail(56)
             sigma=max(1,float(residual.std(ddof=1)))*c.demand_multiplier
+            if c.operational and not h.any():
+                sigma=0.
             c.forecasts[(sku,wh)]={'values':f.tolist(),'mean':float(np.mean(f[:7])),
                                      'sigma':sigma,'model':model,'validation_wape':scores}
-        c.emit(type(self).__name__,'Selected mean28, seasonal7 or Ridge using prior 28-day validation; forecast next 21 days.')
+        validated=sum(bool(f['validation_wape']) for f in c.forecasts.values())
+        c.emit(type(self).__name__,f'Forecast the next 21 days. Compared models on a prior 28-day window at {validated} locations; used the 28-day mean where history was shorter.')
 
 class StockoutRiskAgent:
     def run(self,c):
@@ -101,7 +111,7 @@ class StockoutRiskAgent:
             need=sum(f['values'][:lead]); cover=r['available']/max(.01,mu)
             projected=r['available']; shortage=0
             for d in range(1,lead+1):
-                due=(pd.Timestamp(c.date)+pd.Timedelta(days=d)).date().isoformat()
+                due=c.date_after(d)
                 projected+=sum(o['quantity'] for o in c.orders if o['sku']==r['sku'] and o['warehouse']==r['warehouse'] and o['status']=='OPEN' and o['eta']==due)
                 projected-=f['values'][d-1]; shortage=max(shortage,-projected)
             level='HIGH' if shortage>0 else ('MEDIUM' if r['position']<need+safety else 'LOW')
@@ -134,12 +144,13 @@ class WarehouseOptimizationAgent:
                 df=c.forecasts[(donor['sku'],donor['warehouse'])]
                 protected=sum(df['values'][:14])+1.645*df['sigma']*math.sqrt(14)
                 surplus=max(0,math.floor(donor['available']-protected))
-                q=min(wanted,surplus,max(0,receiver['capacity']-receiver['position']))
+                occupied=receiver['on_hand']+receiver['on_order'] if c.operational else receiver['position']
+                q=min(wanted,surplus,max(0,receiver['capacity']-occupied))
                 if q<=0: continue
                 donor['on_hand']-=q; donor['available']-=q; donor['position']-=q
                 receiver['position']+=q; receiver['on_order']+=q; wanted-=q
                 t=dict(sku=receiver['sku'],warehouse=receiver['warehouse'],source=donor['warehouse'],
-                       quantity=q,eta=(pd.Timestamp(c.date)+pd.Timedelta(days=1)).date().isoformat(),
+                       quantity=q,eta=c.date_after(1),
                        status='OPEN',kind='TRANSFER')
                 c.transfers.append(t); c.orders.append(t)
         c.emit(type(self).__name__,f'Planned {len(c.transfers)} transfers while protecting 14 days plus donor buffer.')
@@ -151,8 +162,9 @@ class ReorderDecisionAgent:
             lead=min(v['lead_days'] for v in c.vendors if v['sku']==r['sku'])+c.delay_days
             safety=1.645*f['sigma']*math.sqrt(lead)
             if r['position']<sum(f['values'][:lead])+safety:
+                occupied=r['on_hand']+r['on_order'] if c.operational else r['position']
                 c.proposals.append(dict(sku=r['sku'],warehouse=r['warehouse'],position=r['position'],
-                                        available=r['available'],capacity=r['capacity']))
+                                        available=r['available'],capacity=r['capacity'],capacity_room=r['capacity']-occupied))
         c.emit(type(self).__name__,f'{len(c.proposals)} positions need a purchase after considering transfers and pipeline stock.')
 
 class VendorIntelligenceAgent:
@@ -164,15 +176,19 @@ class VendorIntelligenceAgent:
                 target=sum(f['values'][:horizon])+1.645*f['sigma']*math.sqrt(horizon)
                 q=math.ceil(max(0,target-p['position'])/v['lot_size'])*v['lot_size']
                 q=max(v['min_qty'],q)
-                room=min(v['max_qty'],p['capacity']-p['position'])
+                room=min(v['max_qty'],p['capacity_room'])
                 q=min(q,int(room//v['lot_size'])*v['lot_size'])
                 price=v['unit_price_inr']*(1-v['discount_rate'] if q>=v['discount_threshold'] else 1)
                 landed=q*price+v['shipping_inr']
-                feasible=q>=v['min_qty'] and landed<=c.budget
+                constraints = []
+                if q < v['min_qty']:
+                    constraints.append('Below minimum order')
+                if landed > c.budget:
+                    constraints.append('Over per-order budget')
                 # Timed open arrivals enter the projected shortage cost exactly once.
                 projected=p['available']; shortage=0
                 for d in range(1,L+1):
-                    day=(pd.Timestamp(c.date)+pd.Timedelta(days=d)).date().isoformat()
+                    day=c.date_after(d)
                     projected+=sum(o['quantity'] for o in c.orders if o['sku']==p['sku'] and o['warehouse']==p['warehouse'] and o['status']=='OPEN' and o['eta']==day)
                     projected-=f['values'][d-1]; shortage=max(shortage,-projected)
                 product=c.products[p['sku']]
@@ -180,10 +196,11 @@ class VendorIntelligenceAgent:
                 holding=q*product['holding_cost_day_inr']*horizon/2
                 candidates.append(dict(**v,quantity=q,actual_price=round(price,2),landed=round(landed,2),
                                         shortage_cost=round(exposure,2),holding_cost=round(holding,2),
-                                        score=round(landed+exposure+holding,2),feasible=feasible,
+                                        score=round(landed+exposure+holding,2),feasible=not constraints,
+                                        constraint_reasons=constraints,
                                         effective_lead=L))
             p['candidates']=candidates
-        c.emit(type(self).__name__,'Enumerated all suppliers with MOQ, lot size, capacity, discounts and a per-order INR 100000 limit.')
+        c.emit(type(self).__name__,f'Checked supplier minimums, lot sizes, capacity, discounts and the INR {c.budget:,.0f} per-order budget.')
 
 class CostOptimizationAgent:
     def run(self,c):
@@ -200,9 +217,10 @@ class PurchaseOrderAgent:
             v=p['selected']
             c.purchases.append(dict(sku=p['sku'],warehouse=p['warehouse'],vendor_id=v['vendor_id'],
                     vendor=v['name'],quantity=v['quantity'],unit_price_inr=v['actual_price'],
-                    total_inr=v['landed'],eta=(pd.Timestamp(c.date)+pd.Timedelta(days=v['effective_lead'])).date().isoformat(),
+                    total_inr=v['landed'],eta=c.date_after(v['effective_lead']),
                     status='OPEN',kind='PURCHASE',reason=f"Lowest feasible estimated total cost INR {v['score']:.2f}"))
-        c.emit(type(self).__name__,f'Generated {len(c.purchases)} structured purchase orders for internal simulated execution.')
+        purpose='operator review' if c.operational else 'internal simulated execution'
+        c.emit(type(self).__name__,f'Generated {len(c.purchases)} structured purchase orders for {purpose}.')
 
 class ReportingDashboardAgent:
     def run(self,c):
@@ -215,7 +233,8 @@ class MasterOrchestrator:
     def run(self,c):
         c.emit(type(self).__name__,'Started detect-decide-execute cycle on a shared blackboard.')
         for agent in self.agents: agent().run(c)
-        c.emit(type(self).__name__,'Cycle complete. Persistence and idempotency belong to the execution adapter.')
+        outcome='Plan complete. Proposed orders are ready for review.' if c.operational else 'Cycle complete. Persistence and idempotency belong to the execution adapter.'
+        c.emit(type(self).__name__,outcome)
         return c
 
 def load_inputs():
